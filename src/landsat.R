@@ -1,4 +1,4 @@
-ndsat<-function(){
+landsat<-function(){
   if (n.sensor<8){
     # Radi�ncia
     rad<-list()
