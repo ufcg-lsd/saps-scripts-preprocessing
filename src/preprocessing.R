@@ -29,7 +29,6 @@ source("landsat.R")
 
 # File that stores the Image Directories (TIFs, MTL, FMask)
 dados <- read.csv("dados.csv", sep=";", stringsAsFactors=FALSE)
-print(dados)
 #################################### Constants ##########################################
 
 k <- 0.41		# Von K?rm?n
@@ -52,7 +51,6 @@ WGS84 <- "+proj=longlat +datum=WGS84 +ellps=WGS84"
 ######################### Image Information ######################################
 
 fic.dir <- dados$File.images[1]  # Images Directory
-print(dados$MTL[1])
 MTL <- read.table(dados$MTL[1], skip=0, nrows=140, sep="=", quote = "''", as.is=TRUE) # Reading MTL File
 
 fic <- substr(MTL$V2[MTL$V1 == grep(pattern="LANDSAT_SCENE_ID", MTL$V1, value=T)], 3, 23)
@@ -284,7 +282,7 @@ proc.time()
 
 # This block write landsat outputs rasters to files
 
-output.path<-paste(dados$Path.Prepoc[1], "/", fic, ".nc", sep="")
+output.path<-paste(dados$Path.Output[1], "/", fic, ".nc", sep="")
 outputWriteRaster <- function() {
   names(output) <- c("Rn", "TS", "NDVI", "EVI", "LAI", "G", "alb", "SAVI")
   # names(output) <- c("TS", "NDVI","LAI", "alb","SAVI")
@@ -307,7 +305,7 @@ tryCatch({
 ####### Saving Albedo ######
 
 # Opening old alb NetCDF
-var_output <- paste(dados$Path.Prepoc, "/", fic, "_alb.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_alb.nc", sep="")
 nc<-nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 proc.time()
@@ -323,7 +321,7 @@ dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitud
 proc.time()
 
 # New alb file name
-file_output <- paste(dados$Path.Prepoc[1], "/", fic, "_alb.nc", sep="")
+file_output <- paste(dados$Path.Output[1], "/", fic, "_alb.nc", sep="")
 oldAlbValues <- ncvar_get(nc, fic)
 newAlbValues <- ncvar_def("alb", "daily", list(dimLonDef, dimLatDef, tdim), longname="alb", missval=NaN, prec="double")
 nc_close(nc)
@@ -336,11 +334,11 @@ proc.time()
 ####### Saving LAI ######
 
 # Opening old LAI NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_LAI.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_LAI.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 # New LAI file name
-file_output <- paste(dados$Path.Prepoc[1], "/", fic, "_LAI.nc", sep="")
+file_output <- paste(dados$Path.Output[1], "/", fic, "_LAI.nc", sep="")
 oldLAIValues <- ncvar_get(nc, fic)
 newLAIValues <- ncvar_def("LAI", "daily", list(dimLonDef, dimLatDef, tdim), longname="LAI", missval=NaN, prec="double")
 nc_close(nc)
@@ -353,11 +351,11 @@ proc.time()
 ####### Saving NDVI ######
 
 # Opening old NDVI NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_NDVI.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_NDVI.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 # New NDVI file name
-file_output <- paste(dados$Path.Prepoc[1], "/", fic, "_NDVI.nc", sep="")
+file_output <- paste(dados$Path.Output[1], "/", fic, "_NDVI.nc", sep="")
 oldNDVIValues <- ncvar_get(nc,fic)
 newNDVIValues <- ncvar_def("NDVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="NDVI", missval=NaN, prec="double")
 nc_close(nc)
@@ -370,11 +368,11 @@ proc.time()
 ###### Saving SAVI ######
 
 #Opening old SAVI NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_SAVI.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_SAVI.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 # New SAVI file name
-file_output <- paste(dados$Path.Prepoc[1], "/", fic, "_SAVI.nc", sep="")
+file_output <- paste(dados$Path.Output[1], "/", fic, "_SAVI.nc", sep="")
 oldSAVIValues <- ncvar_get(nc, fic)
 newSAVIValues <- ncvar_def("SAVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="SAVI", missval=NaN, prec="double")
 nc_close(nc)
@@ -387,11 +385,11 @@ proc.time()
 ###### Saving EVI ######
 
 #Opening old EVI NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_EVI.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_EVI.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 # New EVI file name
-file_output <- paste(dados$Path.Prepoc[1], "/", fic, "_EVI.nc", sep="")
+file_output <- paste(dados$Path.Output[1], "/", fic, "_EVI.nc", sep="")
 oldEVIValues <- ncvar_get(nc, fic)
 newEVIValues <- ncvar_def("EVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="EVI", missval=NaN, prec="double")
 nc_close(nc)
@@ -404,11 +402,11 @@ proc.time()
 ###### Saving TS ######
 
 # Opening old TS NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_TS.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_TS.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 #New TS file name
-file_output<-paste(dados$Path.Prepoc[1],"/",fic,"_TS.nc",sep="")
+file_output<-paste(dados$Path.Output[1],"/",fic,"_TS.nc",sep="")
 oldTSValues<-ncvar_get(nc,fic)
 newTSValues<-ncvar_def("TS","daily",list(dimLonDef,dimLatDef,tdim),longname="TS",missval=NaN,prec="double")
 nc_close(nc)
@@ -421,11 +419,11 @@ proc.time()
 ###### Saving Rn ######
 
 # Opening old Rn NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_Rn.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_Rn.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 #New Rn file name
-file_output<-paste(dados$Path.Prepoc[1],"/",fic,"_Rn.nc",sep="")
+file_output<-paste(dados$Path.Output[1],"/",fic,"_Rn.nc",sep="")
 oldRnValues<-ncvar_get(nc,fic)
 newRnValues<-ncvar_def("Rn","daily",list(dimLonDef,dimLatDef,tdim),longname="Rn",missval=NaN,prec="double")
 nc_close(nc)
@@ -438,11 +436,11 @@ proc.time()
 ###### Saving G ######
 
 # Opening old G NetCDF
-var_output <- paste(dados$Path.Prepoc[1], "/", fic, "_G.nc", sep="")
+var_output <- paste(dados$Path.Output[1], "/", fic, "_G.nc", sep="")
 nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
 #New G file name
-file_output<-paste(dados$Path.Prepoc[1],"/",fic,"_G.nc",sep="")
+file_output<-paste(dados$Path.Output[1],"/",fic,"_G.nc",sep="")
 oldGValues<-ncvar_get(nc,fic)
 newGValues<-ncvar_def("G","daily",list(dimLonDef,dimLatDef,tdim),longname="G",missval=NaN,prec="double")
 nc_close(nc)
@@ -453,7 +451,7 @@ nc_close(newGNCDF4)
 proc.time()
 
 ###### Saving Elevation raster ######
-var_output <- paste(dados$Path.Prepoc[1], "/elevation.tif", sep="")
+var_output <- paste(dados$Path.Output[1], "/elevation.tif", sep="")
 writeRaster(raster.elevation, var_output, format="GTiff")
 
 proc.time()
