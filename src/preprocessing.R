@@ -14,12 +14,8 @@ library(rgdal)
 library(ncdf4)
 library(sp)
 library(snow)
-#library(remotes)
-#library(gpclib)
 library(maptools)
 library(sebkc)
-
-#gpclibPermit()
 
 args = commandArgs(trailingOnly=TRUE)
 WD <- args[1]
@@ -168,7 +164,7 @@ BoundingBox <- BoundingBoxes[BoundingBoxes@data$WRSPR == WRSPR, ]
 
 # Reading Elevation
 # Read the File that stores the Elevation of the image area, this influence on some calculations
-fic.elevation <- paste("Elevation/215065.tif")
+fic.elevation <- paste("elevation/", WRSPR, ".tif", sep="")
 raster.elevation <- raster(fic.elevation)
 raster.elevation <- crop(raster.elevation, extent(BoundingBox))
 
