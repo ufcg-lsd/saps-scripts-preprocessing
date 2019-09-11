@@ -48,9 +48,9 @@ echo "$INPUT_DIR_PATH;$IMAGE_MTL_PATH;$IMAGE_STATION_FILE_PATH;$OUTPUT_DIR_PATH"
 
 echo "Step 3. Starting CPU, disk and Memory collect..."
 
-bash $SCRIPTS_DIR/collect-cpu-usage.sh $(pidof R) | tee $OUTPUT_DIR_PATH/$IMAGE_NAME"_cpu_usage.txt" > /dev/null &
-bash $SCRIPTS_DIR/collect-memory-usage.sh $(pidof R) | tee $OUTPUT_DIR_PATH/$IMAGE_NAME"_mem_usage.txt" > /dev/null &
-bash $SCRIPTS_DIR/collect-disk-usage.sh $(pidof R) | tee $OUTPUT_DIR_PATH/$IMAGE_NAME"_disk_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-cpu-usage.sh $(pidof R) | tee $METADATA_DIR_PATH/$IMAGE_NAME"_cpu_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-memory-usage.sh $(pidof R) | tee $METADATA_DIR_PATH/$IMAGE_NAME"_mem_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-disk-usage.sh $(pidof R) | tee $METADATA_DIR_PATH/$IMAGE_NAME"_disk_usage.txt" > /dev/null &
 
 echo "Step 4. Download raster elevation"
  
@@ -91,7 +91,10 @@ ps -ef | grep collect-memory-usage.sh | grep -v grep | awk '{print $2}' | xargs 
 ps -ef | grep collect-disk-usage.sh | grep -v grep | awk '{print $2}' | xargs kill
 
 echo "Step 7. Moving dados.csv"
-mv $R_EXEC_DIR/dados.csv $OUTPUT_DIR_PATH
+mv $R_EXEC_DIR/dados.csv $METADATA_DIR_PATH
+
+echo "Step 8. Generate metadata"
+bash $SANDBOX/generate_metadata.sh $INPUT_DIR_PATH $OUTPUT_DIR_PATH $METADATA_DIR_PATH
 
 ## Exit code
 # This script should have the following return pattern:
