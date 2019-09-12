@@ -51,7 +51,7 @@ G_OUTPUT_FILE_PATH=$(find $OUTPUT_DIR_PATH -iname "*_G.nc")
 CURRENT_DATE=$(date)
 
 echo "#Preprocessing (default) Implementation Metadata" >> $METADATA_FILE_PATH
-echo "$CURRENT_DATE #Date" >> $METADATA_FILE_PATH
+echo "$CURRENT_DATE # Date" >> $METADATA_FILE_PATH
 
 echo "INPUT FILES" >> $METADATA_FILE_PATH >> $METADATA_FILE_PATH
 echo "$B1_INPUT_FILE_PATH # Band 1 from image" >> $METADATA_FILE_PATH
@@ -88,6 +88,7 @@ then
 fi
 echo "$BQA_INPUT_FILE_PATH # Band QA from image" >> $METADATA_FILE_PATH
 echo "$MTL_INPUT_FILE_PATH # MTL from image" >> $METADATA_FILE_PATH
+echo "$STATION_INPUT_FILE_PATH # Station data from image" >> $METADATA_FILE_PATH
 
 echo "OUTPUT FILES" >> $METADATA_FILE_PATH
 echo "$RASTER_ELEVATION_OUTPUT_FILE_PATH # Preprocessed Raster elevation data file path" >> $METADATA_FILE_PATH
