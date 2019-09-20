@@ -1,21 +1,21 @@
 #!/bin/bash
 
-## Objetive: Pre-processing of input data
-## For example: $0 /tmp/input /tmp/output /tmp/metadata
+## This script downloads the input data for later processing.
 
-## Checking args
-if [ $# -ne 3 ]
+## args
+if [ $# -ne 4 ]
 then
-  echo "Usage: $0 input_path output_path metadata_path"
+  echo "Usage: $0 /tmp/teste landsat_X PPPRRR YYYY-MM-DD"
   exit 1
 fi
 
-## Capture args
-INPUT_DIR_PATH=$1
-OUTPUT_DIR_PATH=$2
-METADATA_DIR_PATH=$3
+## args
+ROOT_DIR=$1
+IMAGE_DATASET=$2
+IMAGE_PATHROW=$3
+IMAGE_DATE=$4
 
-# Global variables
+# global variables
 SANDBOX=$(pwd)
 R_EXEC_DIR=$SANDBOX/src
 SCRIPTS_DIR=$SANDBOX/scripts
@@ -25,9 +25,15 @@ MAX_TRIES=2
 
 R_ALGORITHM_PREPROCESSING_VERSION=preprocessing.R
 
+# folders
+INPUTDOWNLOAD_DATA_DIR_PATH=$ROOT_DIR/inputdownload/data
+PREPROCESSING_DIR_PATH=$ROOT_DIR/preprocessing
+PREPROCESSING_DATA_DIR_PATH=$PREPROCESSING_DIR_PATH/data
+PREPROCESSING_METADATA_DIR_PATH=$PREPROCESSING_DIR_PATH/metadata
+
 echo "Step 1. Capture MTL and station path"
 
-files=($INPUT_DIR_PATH/*_MTL.txt)
+files=($INPUTDOWNLOAD_DATA_DIR_PATH/*_MTL.txt)
 for file in "${files[@]}"
 do
   filename="${file##*/}"
@@ -35,8 +41,8 @@ do
   IMAGE_NAME="$filenameWithoutExtension"
 done
 
-IMAGE_MTL_PATH=$INPUT_DIR_PATH/$IMAGE_NAME"_MTL.txt"
-IMAGE_STATION_FILE_PATH=$INPUT_DIR_PATH/$IMAGE_NAME"_station.csv"
+IMAGE_MTL_PATH=$INPUTDOWNLOAD_DATA_DIR_PATH/$IMAGE_NAME"_MTL.txt"
+IMAGE_STATION_FILE_PATH=$INPUTDOWNLOAD_DATA_DIR_PATH/$IMAGE_NAME"_station.csv"
 
 echo "MTL path: $IMAGE_MTL_PATH"
 echo "Station path: $IMAGE_STATION_FILE_PATH"
@@ -44,13 +50,13 @@ echo "Station path: $IMAGE_STATION_FILE_PATH"
 echo "Step 2. Creating dados.csv for image $IMAGE_NAME"
 
 echo "File images;MTL;File Station Weather;Path Output" > $R_EXEC_DIR/dados.csv
-echo "$INPUT_DIR_PATH;$IMAGE_MTL_PATH;$IMAGE_STATION_FILE_PATH;$OUTPUT_DIR_PATH" >> $R_EXEC_DIR/dados.csv
+echo "$INPUTDOWNLOAD_DATA_DIR_PATH;$IMAGE_MTL_PATH;$IMAGE_STATION_FILE_PATH;$PREPROCESSING_DATA_DIR_PATH" >> $R_EXEC_DIR/dados.csv
 
 echo "Step 3. Starting CPU, disk and Memory collect..."
 
-bash $SCRIPTS_DIR/collect-cpu-usage.sh $(pidof R) | tee $METADATA_DIR_PATH/$IMAGE_NAME"_cpu_usage.txt" > /dev/null &
-bash $SCRIPTS_DIR/collect-memory-usage.sh $(pidof R) | tee $METADATA_DIR_PATH/$IMAGE_NAME"_mem_usage.txt" > /dev/null &
-bash $SCRIPTS_DIR/collect-disk-usage.sh $(pidof R) | tee $METADATA_DIR_PATH/$IMAGE_NAME"_disk_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-cpu-usage.sh $(pidof R) | tee $PREPROCESSING_METADATA_DIR_PATH/$IMAGE_NAME"_cpu_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-memory-usage.sh $(pidof R) | tee $PREPROCESSING_METADATA_DIR_PATH/$IMAGE_NAME"_mem_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-disk-usage.sh $(pidof R) | tee $PREPROCESSING_METADATA_DIR_PATH/$IMAGE_NAME"_disk_usage.txt" > /dev/null &
 
 echo "Step 4. Download raster elevation"
  
@@ -63,8 +69,8 @@ echo "Step 5. Executing R script"
 for i in `seq $MAX_TRIES`
   do
   
-  rm -rf $TMP_DIR_PATH/* $METADATA_DIR_PATH/out.log $METADATA_DIR_PATH/error.log
-  bash $SCRIPTS_DIR/executeRScript.sh $R_EXEC_DIR/$R_ALGORITHM_PREPROCESSING_VERSION $R_EXEC_DIR $TMP_DIR_PATH $METADATA_DIR_PATH
+  rm -rf $TMP_DIR_PATH/* $PREPROCESSING_METADATA_DIR_PATH/out.log $PREPROCESSING_METADATA_DIR_PATH/error.log
+  bash $SCRIPTS_DIR/executeRScript.sh $R_EXEC_DIR/$R_ALGORITHM_PREPROCESSING_VERSION $R_EXEC_DIR $TMP_DIR_PATH $PREPROCESSING_METADATA_DIR_PATH
   PROCESS_OUTPUT=$?
   
   echo "executeRScript_process_output=$PROCESS_OUTPUT"
@@ -91,10 +97,10 @@ ps -ef | grep collect-memory-usage.sh | grep -v grep | awk '{print $2}' | xargs 
 ps -ef | grep collect-disk-usage.sh | grep -v grep | awk '{print $2}' | xargs kill
 
 echo "Step 7. Moving dados.csv"
-mv $R_EXEC_DIR/dados.csv $METADATA_DIR_PATH
+mv $R_EXEC_DIR/dados.csv $PREPROCESSING_METADATA_DIR_PATH
 
 echo "Step 8. Generate metadata"
-bash $SANDBOX/generate_metadata.sh $INPUT_DIR_PATH $OUTPUT_DIR_PATH $METADATA_DIR_PATH
+bash $SANDBOX/generate_metadata.sh $INPUTDOWNLOAD_DATA_DIR_PATH $PREPROCESSING_DATA_DIR_PATH $PREPROCESSING_METADATA_DIR_PATH
 
 ## Exit code
 # This script should have the following return pattern:
