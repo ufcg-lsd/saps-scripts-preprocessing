@@ -103,6 +103,4 @@ echo "Step 8. Generate metadata"
 bash $SANDBOX/generate_metadata.sh $INPUTDOWNLOAD_DATA_DIR_PATH $PREPROCESSING_DATA_DIR_PATH $PREPROCESSING_METADATA_DIR_PATH
 
 ## Exit code
-# This script should have the following return pattern:
-# - `0` represents a successful execution.
-# And any other exit code will be considered failed.
+# exit code `0` indicates a successful execution. Any other number indicates failure.
