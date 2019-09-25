@@ -52,7 +52,7 @@ CURRENT_DATE=$(date)
 echo "#Preprocessing (default) Implementation Metadata" >> $METADATA_FILE_PATH
 echo "$CURRENT_DATE # Date" >> $METADATA_FILE_PATH
 
-echo "INPUT FILES" >> $METADATA_FILE_PATH >> $METADATA_FILE_PATH
+echo "INPUT FILES" >> $METADATA_FILE_PATH
 echo "$B1_INPUTDOWNLOADING_FILE_PATH # Band 1 from image" >> $METADATA_FILE_PATH
 echo "$B2_INPUTDOWNLOADING_FILE_PATH # Band 2 from image" >> $METADATA_FILE_PATH
 echo "$B3_INPUTDOWNLOADING_FILE_PATH # Band 3 from image" >> $METADATA_FILE_PATH
