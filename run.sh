@@ -98,7 +98,7 @@ echo "Step 7. Moving dados.csv"
 mv $R_EXEC_DIR/dados.csv $PREPROCESSING_DIR_PATH
 
 echo "Step 8. Generate metadata"
-bash $SANDBOX/generate_metadata.sh $IMAGE_DATASET $IMAGE_PATHROW $IMAGE_DATE $INPUTDOWNLOAD_DIR_PATH $PREPROCESSING_DIR_PATH
+bash $SANDBOX/generate_metadata.sh "$IMAGE_DATASET" "$IMAGE_PATHROW" "$IMAGE_DATE" "$INPUTDOWNLOAD_DIR_PATH" "$PREPROCESSING_DIR_PATH"
 
 ## Exit code
 # exit code `0` indicates a successful execution. Any other number indicates failure.
