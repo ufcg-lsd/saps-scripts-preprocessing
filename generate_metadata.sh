@@ -1,11 +1,11 @@
 #!/bin/bash
 
-## For example: $0 /tmp/inputdownloading /tmp/preprocessing
+## For example: $0 landsat_8 217066 2017-03-22 /tmp/inputdownloading /tmp/preprocessing
 
 ## Checking args
-if [ $# -ne 2 ]
+if [ $# -ne 5 ]
 then
-  echo "Usage: $0 inputdownloading_path preprocessing_path"
+  echo "Usage: $0 dataset pathrow date inputdownloading_path preprocessing_path"
   exit 1
 fi
 
