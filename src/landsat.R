@@ -174,8 +174,8 @@ landsat<-function(){
   }
   
   ##### Clean memory #####
-  rm(ref, alb_temp, Rn_temp, NDVI_temp, EVI_temp, LAI_temp, G_temp, tal, Rs_temp, SAVI_temp, Enb_temp, SAVI_subset1, SAVI_subset2, SAVI_subset3, Eo_temp, TS_temp, RLsup_temp, Ea_temp, RLatm_temp, G_temp_1, G_temp_2, rad, rad10)
-  gc()
+  #rm(ref, alb_temp, Rn_temp, NDVI_temp, EVI_temp, LAI_temp, G_temp, tal, Rs_temp, SAVI_temp, Enb_temp, SAVI_subset1, SAVI_subset2, SAVI_subset3, Eo_temp, TS_temp, RLsup_temp, Ea_temp, RLatm_temp, G_temp_1, G_temp_2, rad, rad10)
+  #gc()
   ########################
   
   return(output)
