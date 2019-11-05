@@ -60,6 +60,10 @@ n.sensor <- as.numeric(substr(fic, 3, 3)) # Sensor Number
 if (n.sensor==8) MTL <- read.table(dados$MTL[1], skip=0, nrows=-1, sep="=", quote="''", as.is=TRUE, fill=TRUE) # Reading MTL File for Sensor number 8
 
 WRSPR <- substr(fic, 4, 9)						#WRSPR
+PATH <- substr(WRSPR, 0, 2)
+ROW <- substr(WRSPR, 3, 5)
+print (PATH)
+print (ROW)
 Ano <- as.numeric(substr(fic, 10, 13))			#Images year
 Dia.juliano <- as.numeric(substr(fic, 14, 16))	#Julian Day
 
@@ -189,7 +193,9 @@ t_srs <- WGS84
 rm(fic.st)
 gc()
 
-gdalwarp(fic.elevation, sub('\\.tif', '_RESAMPLED.tif', fic.elevation), s_srs=s_srs, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, cwhere='PATH=215 AND ROW=65', crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
+condition <- paste('PATH=',PATH,' AND ROW=',ROW, sep="")
+print (condition)
+gdalwarp(fic.elevation, sub('\\.tif', '_RESAMPLED.tif', fic.elevation), s_srs=s_srs, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, cwhere=condition, crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
 
 raster.elevation <- raster(sub('\\.tif', '_RESAMPLED.tif', fic.elevation))
 
