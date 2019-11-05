@@ -60,8 +60,8 @@ n.sensor <- as.numeric(substr(fic, 3, 3)) # Sensor Number
 if (n.sensor==8) MTL <- read.table(dados$MTL[1], skip=0, nrows=-1, sep="=", quote="''", as.is=TRUE, fill=TRUE) # Reading MTL File for Sensor number 8
 
 WRSPR <- substr(fic, 4, 9)						#WRSPR
-PATH <- substr(WRSPR, 0, 2)
-ROW <- substr(WRSPR, 3, 5)
+PATH <- substr(WRSPR, 0, 3)
+ROW <- substr(WRSPR, 4, 6)
 print (PATH)
 print (ROW)
 Ano <- as.numeric(substr(fic, 10, 13))			#Images year
