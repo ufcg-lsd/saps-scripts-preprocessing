@@ -60,8 +60,8 @@ n.sensor <- as.numeric(substr(fic, 3, 3)) # Sensor Number
 if (n.sensor==8) MTL <- read.table(dados$MTL[1], skip=0, nrows=-1, sep="=", quote="''", as.is=TRUE, fill=TRUE) # Reading MTL File for Sensor number 8
 
 WRSPR <- substr(fic, 4, 9)						#WRSPR
-PATH <- substr(WRSPR, 0, 3)
-ROW <- substr(WRSPR, 4, 6)
+PATH <- as.numeric(substr(WRSPR, 0, 3))
+ROW <- as.numeric(substr(WRSPR, 4, 6))
 print (PATH)
 print (ROW)
 Ano <- as.numeric(substr(fic, 10, 13))			#Images year
@@ -193,7 +193,7 @@ t_srs <- WGS84
 rm(fic.st)
 gc()
 
-condition <- paste('PATH=',PATH,' AND ROW=',ROW, sep="")
+condition <- paste('PATH=', toString(PATH),' AND ROW=', toString(ROW), sep="")
 print (condition)
 gdalwarp(fic.elevation, sub('\\.tif', '_RESAMPLED.tif', fic.elevation), s_srs=s_srs, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, cwhere=condition, crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
 
@@ -215,7 +215,7 @@ for(i in 1:(length(bands.path))){
 tr <- res(raster.elevation)
 
 sapply(bands.path, function(file){
-	gdalwarp(file, sub('\\_noCloud.tif', '_RESAMPLED.TIF', file), s_srs=s_srs_2, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, srcnodata='0', dstnodata='0', cwhere='PATH=215 AND ROW=65', crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
+	gdalwarp(file, sub('\\_noCloud.tif', '_RESAMPLED.TIF', file), s_srs=s_srs_2, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, srcnodata='0', dstnodata='0', cwhere=condition, crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
 })
 
 print("LABEL - BANDS RESAMPLE")
