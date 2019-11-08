@@ -8,6 +8,9 @@ landsat<-function(){
       rad_subset <- rad[[i]] < 0 & !is.na(rad[[i]])
       rad[[i]][rad_subset]<-0
     }
+
+    rm(image.rec, rad_subset)
+    gc()
     
     #Reflect�ncia
     ref<-list()
@@ -15,17 +18,11 @@ landsat<-function(){
       ref[[i]]<-pi*rad[[i]]*d_sun_earth$dist[Dia.juliano]^2/
         (p.s$ESUN[i]*costheta)
     }
+
+    rm(rad)
+    gc()
     
-    #Albedo de superf�cie
-    alb_temp<-ref[[1]]*p.s$wb[1]+ref[[2]]*p.s$wb[2]+ref[[3]]*p.s$wb[3]+ref[[4]]*p.s$wb[4]+
-      ref[[5]]*p.s$wb[5]+ref[[r]]*p.s$wb[r]
-    alb_temp<-(alb_temp-0.03)/tal[]^2
-    
-    # #Radia��o de onda curta incidente
-    Rs_temp<-1367*costheta*tal[]/d_sun_earth$dist[Dia.juliano]^2 # C�u claro
-    
-    #NDVI,SAVI,LAI e EVI
-    NDVI_temp<-(ref[[4]]-ref[[3]])/(ref[[4]]+ref[[3]])
+    #SAVI,LAI e EVI
     SAVI_temp<- ((1+0.05)*(ref[[4]]-ref[[3]]))/(0.05+ref[[4]]+ref[[3]])
     LAI_temp <- SAVI_temp
     SAVI_subset1 <- SAVI_temp > 0.687 & !is.na(SAVI_temp)
@@ -34,40 +31,84 @@ landsat<-function(){
     LAI_temp[SAVI_subset1] <- 6
     LAI_temp[SAVI_subset2] <- -log((0.69 - SAVI_temp[SAVI_subset2]) / 0.59) / 0.91
     LAI_temp[SAVI_subset3] <- 0
-    EVI_temp<-2.5*((ref[[4]]-ref[[3]])/(ref[[4]]+(6*ref[[3]])-(7.5*ref[[1]])+1))
-    
+
+    rm(SAVI_subset1, SAVI_subset2, SAVI_subset3)
+    gc()
+
+    #NDVI
+    NDVI_temp<-(ref[[4]]-ref[[3]])/(ref[[4]]+ref[[3]])
+
+    gc()
+
     #Emissividade Enb
     Enb_temp <- 0.97+0.0033*LAI_temp
     Enb_temp[NDVI_temp<0 | LAI_temp>2.99]<-0.98
     
-    #Emissividade Eo
-    Eo_temp <- 0.95+0.01*LAI_temp
-    Eo_temp[NDVI_temp<0 | LAI_temp>2.99]<-0.98
-    
+    gc()
+
     #Temperatura de Superf�cie em Kelvin (TS)
     if (n.sensor==5) k1<-607.76 else k1<-666.09   #Constante Temperatura de superf�cie
     if (n.sensor==7) k2<-1260.56 else k2<-1282.71 #Constante Temperatura de superf�cie
     if (n.sensor==5) TS_temp<-k2/log((Enb_temp*k1/rad[[6]])+1) else TS_temp<-k2/log((Enb_temp*k1/rad[[7]])+1)
     
+    rm(Enb_temp)
+    gc()
+
+    #Emissividade Eo
+    Eo_temp <- 0.95+0.01*LAI_temp
+    Eo_temp[NDVI_temp<0 | LAI_temp>2.99]<-0.98
+    
+    gc()
+
     #Radia��o de onda longa emitida pela superf�cie (RLsup)
     RLsup_temp<-Eo_temp*5.67*10^-8*TS_temp^4
     
+    gc()
+
     #Emissividade atmosf�rica (Ea)
     Ea_temp<-0.85*(-1*log(tal[]))^0.09 # C�u Claro
-    
+
+    gc()
+
     #Radia��o de onda longa emitida pela atmosfera (RLatm)
     RLatm_temp<-Ea_temp*5.67*10^-8*(table.sw$V7[2]+273.15)^4
     
+    rm(Ea_temp)
+    gc()
+
+    #Radia��o de onda curta incidente
+    Rs_temp<-1367*costheta*tal[]/d_sun_earth$dist[Dia.juliano]^2 # C�u claro
+
+    gc()
+
+    #Albedo de superf�cie
+    alb_temp<-ref[[1]]*p.s$wb[1]+ref[[2]]*p.s$wb[2]+ref[[3]]*p.s$wb[3]+ref[[4]]*p.s$wb[4]+
+      ref[[5]]*p.s$wb[5]+ref[[r]]*p.s$wb[r]
+    alb_temp<-(alb_temp-0.03)/tal[]^2
+
+    gc()
+
+    EVI_temp<-2.5*((ref[[4]]-ref[[3]])/(ref[[4]]+(6*ref[[3]])-(7.5*ref[[1]])+1))
+    
+    rm(p.s, ref)
+    gc()
+
     #Saldo de radia��o Instant�nea (Rn)
     Rn_temp<- Rs_temp-Rs_temp*alb_temp+RLatm_temp-RLsup_temp-(1-Eo_temp)*RLatm_temp
     Rn_temp[Rn_temp<0]<-0
-    
+
+    rm(RLsup_temp, RLatm_temp, Rs_temp, Eo_temp)
+    gc()
+
     #Fluxo de Calor no Solo (G)
     G_temp_1<-(NDVI_temp>=0)*(((TS_temp-273.15)*(0.0038+0.0074*alb_temp)*(1-0.98*NDVI_temp^4))*Rn_temp)
     G_temp_2 <- (NDVI_temp<0)*(0.5*Rn_temp)
     G_temp <- G_temp_1 + G_temp_2
     G_temp[G_temp<0]<-0
      
+    rm(G_temp_1, G_temp_2)
+    gc()
+
     alb <- tal
     alb[] <- alb_temp
     Rn<-tal
@@ -99,17 +140,11 @@ landsat<-function(){
     for(i in 1:6){
       ref[[i]]<-(image.rec[[i]][]*0.00002-0.1)/costheta
     }
+
+    rm(image.rec)
+    gc()
     
-    #Albedo de superf�cie
-    alb_temp<-ref[[1]]*p.s$wb[1]+ref[[2]]*p.s$wb[2]+ref[[3]]*p.s$wb[3]+ref[[4]]*p.s$wb[4]+
-      ref[[5]]*p.s$wb[5]+ref[[6]]*p.s$wb[6]
-    alb_temp<-(alb_temp-0.03)/tal[]^2
-    
-    # #Radia��o de onda curta incidente
-    Rs_temp<-1367*costheta*tal[]/d_sun_earth$dist[Dia.juliano]^2 # C�u claro
-    
-    #NDVI,SAVI,LAI e EVI
-    NDVI_temp<-(ref[[4]]-ref[[3]])/(ref[[4]]+ref[[3]])
+    #SAVI,LAI e EVI
     SAVI_temp<- ((1+0.05)*(ref[[4]]-ref[[3]]))/(0.05+ref[[4]]+ref[[3]])
     LAI_temp <- SAVI_temp
     SAVI_subset1 <- SAVI_temp > 0.687 & !is.na(SAVI_temp)
@@ -119,23 +154,38 @@ landsat<-function(){
     LAI_temp[SAVI_subset2] <- -log((0.69 - SAVI_temp[SAVI_subset2])/0.59) / 0.91
     LAI_temp[SAVI_subset3] <- 0
     
-    EVI_temp<-2.5*((ref[[4]]-ref[[3]])/(ref[[4]]+(6*ref[[3]])-(7.5*ref[[1]])+1))
+    rm(SAVI_subset1, SAVI_subset2, SAVI_subset3)
+    gc()
     
+    #NDVI
+    NDVI_temp<-(ref[[4]]-ref[[3]])/(ref[[4]]+ref[[3]])
+
+    gc()
+
     #Emissividade Enb
     Enb_temp <- 0.97+0.0033*LAI_temp
     Enb_temp[NDVI_temp<0 | LAI_temp>2.99]<-0.98
     
-    #Emissividade Eo
-    Eo_temp <- 0.95+0.01*LAI_temp
-    Eo_temp[NDVI_temp<0 | LAI_temp>2.99]<-0.98
-    
+    gc()
+
     #Temperatura de Superf�cie em Kelvin (TS)
     k1<-774.8853      #Constante Temperatura de superf�cie
     k2<-1321.0789     #Constante Temperatura de superf�cie
     TS_temp<-k2/log((Enb_temp*k1/rad10)+1)
     
+    rm(Enb_temp)
+    gc()
+
+    #Emissividade Eo
+    Eo_temp <- 0.95+0.01*LAI_temp
+    Eo_temp[NDVI_temp<0 | LAI_temp>2.99]<-0.98
+
+    gc()
+
     #Radia��o de onda longa emitida pela superf�cie (RLsup)
     RLsup_temp<-Eo_temp*5.67*10^-8*TS_temp^4
+
+    gc()
     
     #Emissividade atmosf�rica (Ea)
     Ea_temp<-0.85*(-1*log(tal[]))^0.09 # C�u Claro
@@ -143,15 +193,39 @@ landsat<-function(){
     #Radia��o de onda longa emitida pela atmosfera (RLatm)
     RLatm_temp<-Ea_temp*5.67*10^-8*(table.sw$V7[2]+273.15)^4
     
+    rm(Ea_temp)
+    gc()
+
+    # #Radia��o de onda curta incidente
+    Rs_temp<-1367*costheta*tal[]/d_sun_earth$dist[Dia.juliano]^2 # C�u claro
+
+    gc()
+
+    #Albedo de superf�cie
+    alb_temp<-ref[[1]]*p.s$wb[1]+ref[[2]]*p.s$wb[2]+ref[[3]]*p.s$wb[3]+ref[[4]]*p.s$wb[4]+
+      ref[[5]]*p.s$wb[5]+ref[[6]]*p.s$wb[6]
+    alb_temp<-(alb_temp-0.03)/tal[]^2
+
+    EVI_temp<-2.5*((ref[[4]]-ref[[3]])/(ref[[4]]+(6*ref[[3]])-(7.5*ref[[1]])+1))
+
+    rm(ref)
+    gc()
+
     #Saldo de radia��o Instant�nea (Rn)
     Rn_temp<- Rs_temp-Rs_temp*alb_temp+RLatm_temp-RLsup_temp-(1-Eo_temp)*RLatm_temp
     Rn_temp[Rn_temp<0]<-0
-    
+
+    rm(Eo_temp, Rs_temp, RLatm_temp, RLsup_temp)
+    gc()
+
     #Fluxo de Calor no Solo (G)
     G_temp_1<-(NDVI_temp>=0)*(((TS_temp-273.15)*(0.0038+0.0074*alb_temp)*(1-0.98*NDVI_temp^4))*Rn_temp)
     G_temp_2 <- (NDVI_temp<0)*(0.5*Rn_temp)
     G_temp <- G_temp_1 + G_temp_2
     G_temp[G_temp<0]<-0
+
+    rm(G_temp_1, G_temp_2)
+    gc()
     
     alb <- tal
     alb[] <- alb_temp
@@ -172,11 +246,6 @@ landsat<-function(){
     
     output<-stack(Rn,TS,NDVI,EVI,LAI,G,alb,SAVI)
   }
-  
-  ##### Clean memory #####
-  rm(ref, alb_temp, Rn_temp, NDVI_temp, EVI_temp, LAI_temp, G_temp, tal, Rs_temp, SAVI_temp, Enb_temp, SAVI_subset1, SAVI_subset2, SAVI_subset3, Eo_temp, TS_temp, RLsup_temp, Ea_temp, RLatm_temp, G_temp_1, G_temp_2, rad, rad10)
-  gc()
-  ########################
   
   return(output)
 }

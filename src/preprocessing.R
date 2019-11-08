@@ -42,9 +42,6 @@ p.s.TM2 <- read.csv("parametros do sensor/parametrosdosensorTM2.csv", sep=";", s
 p.s.ETM <- read.csv("parametros do sensor/parametrosdosensorETM.csv", sep=";", stringsAsFactors=FALSE)
 p.s.LC <- read.csv("parametros do sensor/parametrosdosensorLC.csv", sep=";", stringsAsFactors=FALSE)
 
-# Read relative distance from Sun to Earth
-load("d_sun_earth.RData")
-
 # Set projection and spatial resolution
 WGS84 <- "+proj=longlat +datum=WGS84 +ellps=WGS84"
 
@@ -62,8 +59,6 @@ if (n.sensor==8) MTL <- read.table(dados$MTL[1], skip=0, nrows=-1, sep="=", quot
 WRSPR <- substr(fic, 4, 9)						#WRSPR
 PATH <- as.numeric(substr(WRSPR, 0, 3))
 ROW <- as.numeric(substr(WRSPR, 4, 6))
-print (PATH)
-print (ROW)
 Ano <- as.numeric(substr(fic, 10, 13))			#Images year
 Dia.juliano <- as.numeric(substr(fic, 14, 16))	#Julian Day
 
@@ -81,6 +76,13 @@ if (Ano > 1992 & n.sensor==5) p.s <- p.s.TM2
 acquired_date <- as.Date(MTL$V2[MTL$V1==grep(pattern="DATE_ACQUIRED", MTL$V1, value=TRUE)])
 daysSince1970 <- as.numeric(acquired_date)
 tdim <- ncdim_def("time", "days since 1970-1-1", daysSince1970, unlim=TRUE, create_dimvar=TRUE, "standard", "time")
+
+# Reading file Station weather
+fic.sw <- dados$File.Station.Weather[1]
+table.sw <- (read.csv(fic.sw, sep=";", header=FALSE, stringsAsFactors=FALSE))
+hour.image <- (as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 3, 4))+
+                 as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 6, 7))/60)*100
+hour.image.station<-which.min(abs(table.sw$V3[]-hour.image))
 
 # Reading image file
 # The Images are of the type ".tif" that represents each spectral band captured by the satellite
@@ -113,7 +115,9 @@ getBandsPath <- function(n.sensor){
 fic.st <- stack(as.list(getBandsPath(n.sensor)))
 wanted_bands.path <- getBandsPath(n.sensor)
 
-print("LABEL - DATA READING")
+gc()
+
+print("Initialization")
 proc.time()
 
 ################################# Fmask ###########################################
@@ -125,6 +129,9 @@ n.fmask <- length(fichs.imagens)
 Fmask <- raster(fichs.imagens[[n.fmask]])
 fmask <- as.vector(Fmask)
 
+rm(Fmask)
+gc()
+
 if (n.sensor != 8) mask_filter <- 672 else 
   mask_filter <- 2720
 for (i in 1:nlayers(fic.st)) {
@@ -133,6 +140,10 @@ for (i in 1:nlayers(fic.st)) {
   fic.st[[i]][] <- f 
 }
 
+rm(fmask)
+gc()
+
+print("MaskingTiffsWithoutClouds")
 proc.time()
 
 if(n.sensor == 7){
@@ -147,7 +158,9 @@ if(n.sensor == 7){
   }
 }
 
-print("LABEL - MASKING CLOUDS")
+gc()
+
+print("CheckCloudCover")
 proc.time()
 
 #WRITING WITHOUT CLOUDS
@@ -158,17 +171,23 @@ for(i in 1:length(wanted_bands.path)){
 	writeRaster(fic.st[[i]], aux, format='GTiff', NAflag=0, overwrite=TRUE)
 }
 
-print("LABEL - WRITING WITHOUT CLOUDS")
-proc.time()
+gc()
 
 # Changing the projection of the images (UTM to GEO)
 # This operation can be done in a parallel way by Clusters, projectRaster is implemented to naturally be executed by clusters
 # The number of used clusters is given by the 'clusters' constant
 
+print("WritingTiffsWithoutClouds")
+proc.time()
+
 s_srs_2 <- paste(crs(fic.st[[1]]))
 fic.st <- projectRaster(fic.st, crs=WGS84)
+tr <- res(fic.st)
 
-print("LABEL - LANDSAT IMAGES PROJECT")
+rm(fic.st)
+gc()
+
+print("LandsatImagesProject")
 proc.time()
 
 # Reading Bounding Box
@@ -177,29 +196,51 @@ fic.bounding.boxes <- paste("wrs2_asc_desc/wrs2_asc_desc.shp")
 BoundingBoxes <- readOGR(dsn=fic.bounding.boxes)#, proj4string=CRS(WGS84))
 BoundingBox <- BoundingBoxes[BoundingBoxes@data$WRSPR == WRSPR, ]
 
+gc()
+
+print("SelectBoudingBox")
+proc.time()
+
 # Reading Elevation
 # Read the File that stores the Elevation of the image area, this influence on some calculations
 fic.elevation <- paste(fic.dir, "/", WRSPR, ".tif", sep="")
 raster.elevation <- raster(fic.elevation)
-
-print("LABEL - BEFORE ELEVATION RESAMPLE")
-proc.time()
-
-# Setting the raster elevation resolution as equals to the Fmask raster resolution
-tr <- res(fic.st)
 s_srs <- paste(crs(raster.elevation))
 t_srs <- WGS84
 
-rm(fic.st)
+rm(raster.elevation)
 gc()
 
+print("OpenElevationRaster")
+proc.time()
+
+# Setting the raster elevation resolution as equals to the Fmask raster resolution
+
+
 condition <- paste('PATH=', toString(PATH),' AND ROW=', toString(ROW), sep="")
-print (condition)
 gdalwarp(fic.elevation, sub('\\.tif', '_RESAMPLED.tif', fic.elevation), s_srs=s_srs, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, cwhere=condition, crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
+
+print("ResampleFunctionInElevationRaster")
+gc()
 
 raster.elevation <- raster(sub('\\.tif', '_RESAMPLED.tif', fic.elevation))
 
-print("LABEL - AFTER ELEVATION RESAMPLE")
+gc()
+
+# Transmissivity 
+tal <- 0.75+2*10^-5*raster.elevation
+tr <- res(raster.elevation)
+nrows.elevation.raster <- raster.elevation@nrows
+ncols.elevation.raster <- raster.elevation@ncols
+
+###### Saving Elevation raster ######
+var_output <- paste(dados$Path.Output[1], "/elevation.tif", sep="")
+writeRaster(raster.elevation, var_output, format="GTiff")
+
+rm(raster.elevation)
+gc()
+
+print("WriteElevationRaster")
 proc.time()
 
 #################### Resampling satellite bands images #####################################
@@ -207,46 +248,39 @@ proc.time()
 # This block of code resample the image based on the Elevation of the terrain captured by the sat
 # The Elevation of the terrain needs to be taken into account
 
-fic.st.paths <- c()
+fic.resampled.paths <- c()
 for(i in 1:(length(bands.path))){
-	fic.st.paths <- c(fic.st.paths, sub('\\_noCloud.tif', '_RESAMPLED.TIF', bands.path[[i]]))
+	fic.resampled.paths <- c(fic.resampled.paths, sub('\\_noCloud.tif', '_RESAMPLED.TIF', bands.path[[i]]))
 }
-
-tr <- res(raster.elevation)
 
 sapply(bands.path, function(file){
 	gdalwarp(file, sub('\\_noCloud.tif', '_RESAMPLED.TIF', file), s_srs=s_srs_2, t_srs=t_srs, tr=tr, cutline=fic.bounding.boxes, srcnodata='0', dstnodata='0', cwhere=condition, crop_to_cutline=TRUE, overwrite=TRUE, verbose=TRUE)
 })
 
-print("LABEL - BANDS RESAMPLE")
+print("ResampleFunctionInLandsatTiffs")
 proc.time()
 
+gc()
+
 image.rec <- stack()
-for(i in 1:length(fic.st.paths)){
-	aux <- raster(fic.st.paths[[i]])
+for(i in 1:length(fic.resampled.paths)){
+	aux <- raster(fic.resampled.paths[[i]])
 	image.rec <- stack(image.rec, aux)
 }
 
-print("LABEL - NEW BANDS READING")
-proc.time()
+gc()
 
 ############################################################################################
 
-# Reading file Station weather
-fic.sw <- dados$File.Station.Weather[1]
-table.sw <- (read.csv(fic.sw, sep=";", header=FALSE, stringsAsFactors=FALSE))
-hour.image <- (as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 3, 4))+
-                 as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 6, 7))/60)*100
-hour.image.station<-which.min(abs(table.sw$V3[]-hour.image))
-
-# Transmissivity 
-tal <- 0.75+2*10^-5*raster.elevation
-
+print("OpenResampledTiffs")
 proc.time()
 
 ################## Phase 1: Calculating the image energy balance ##################################
 
 # This block calculate the energy balance of the image
+
+# Read relative distance from Sun to Earth
+load("d_sun_earth.RData")
 
 output <- NULL;
 outputLandsat <- function() {
@@ -266,13 +300,12 @@ tryCatch({
   quit("no", 124, FALSE)
 })
 
+gc()
+
 ###########################################################################################
 
-print("LABEL - LANDSAT FUNCTION")
+print("LandsatFunction")
 proc.time()
-
-rm(image.rec)
-gc()
 
 ################## Masking landsat rasters output #########################################
 
@@ -297,9 +330,11 @@ tryCatch({
   quit("no", 124, FALSE)
 })
 
+gc()
+
 ##########################################################################################
 
-print("LABEL - MASKING OUTPUT LANDSAT")
+print("MaskingOutputLandsat")
 proc.time()
 
 ################## Write to files landsat output rasters #################################
@@ -326,17 +361,23 @@ tryCatch({
   quit("no", 124, FALSE)
 })
 
+gc()
+
+print("WriteMaskedLandsat")
+proc.time()
+
 ####### Saving Albedo ######
 
 # Opening old alb NetCDF
 var_output <- paste(dados$Path.Output[1], "/", fic, "_alb.nc", sep="")
 nc<-nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
 
+gc()
 proc.time()
 
 # Getting lat and lon values from old NetCDF
-oldLat <- ncvar_get(nc, "lat", start=1, count=raster.elevation@nrows)
-oldLon <- ncvar_get(nc, "lon", start=1, count=raster.elevation@ncols)
+oldLat <- ncvar_get(nc, "lat", start=1, count=nrows.elevation.raster)
+oldLon <- ncvar_get(nc, "lon", start=1, count=ncols.elevation.raster)
 
 # Defining latitude and longitude dimensions
 dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
@@ -350,9 +391,10 @@ oldAlbValues <- ncvar_get(nc, fic)
 newAlbValues <- ncvar_def("alb", "daily", list(dimLonDef, dimLatDef, tdim), longname="alb", missval=NaN, prec="double")
 nc_close(nc)
 newAlbNCDF4 <- nc_create(file_output, newAlbValues)
-ncvar_put(newAlbNCDF4, "alb", oldAlbValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
+ncvar_put(newAlbNCDF4, "alb", oldAlbValues, start=c(1, 1, 1), count=c(ncols.elevation.raster, nrows.elevation.raster, 1))
 nc_close(newAlbNCDF4)
 
+gc()
 proc.time()
 
 ####### Saving LAI ######
@@ -367,9 +409,10 @@ oldLAIValues <- ncvar_get(nc, fic)
 newLAIValues <- ncvar_def("LAI", "daily", list(dimLonDef, dimLatDef, tdim), longname="LAI", missval=NaN, prec="double")
 nc_close(nc)
 newLAINCDF4 <- nc_create(file_output, newLAIValues)
-ncvar_put(newLAINCDF4, "LAI", oldLAIValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
+ncvar_put(newLAINCDF4, "LAI", oldLAIValues, start=c(1, 1, 1), count=c(ncols.elevation.raster, nrows.elevation.raster, 1))
 nc_close(newLAINCDF4)
 
+gc()
 proc.time()
 
 ####### Saving NDVI ######
@@ -384,9 +427,10 @@ oldNDVIValues <- ncvar_get(nc,fic)
 newNDVIValues <- ncvar_def("NDVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="NDVI", missval=NaN, prec="double")
 nc_close(nc)
 newNDVINCDF4 <- nc_create(file_output, newNDVIValues)
-ncvar_put(newNDVINCDF4, "NDVI", oldNDVIValues, start=c(1, 1, 1),count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
+ncvar_put(newNDVINCDF4, "NDVI", oldNDVIValues, start=c(1, 1, 1),count=c(ncols.elevation.raster, nrows.elevation.raster, 1))
 nc_close(newNDVINCDF4)
 
+gc()
 proc.time()
 
 ###### Saving SAVI ######
@@ -401,9 +445,10 @@ oldSAVIValues <- ncvar_get(nc, fic)
 newSAVIValues <- ncvar_def("SAVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="SAVI", missval=NaN, prec="double")
 nc_close(nc)
 newSAVINCDF4 <- nc_create(file_output, newSAVIValues)
-ncvar_put(newSAVINCDF4, "SAVI", oldSAVIValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
+ncvar_put(newSAVINCDF4, "SAVI", oldSAVIValues, start=c(1, 1, 1), count=c(ncols.elevation.raster, nrows.elevation.raster, 1))
 nc_close(newSAVINCDF4)
 
+gc()
 proc.time()
 
 ###### Saving EVI ######
@@ -418,9 +463,10 @@ oldEVIValues <- ncvar_get(nc, fic)
 newEVIValues <- ncvar_def("EVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="EVI", missval=NaN, prec="double")
 nc_close(nc)
 newEVINCDF4 <- nc_create(file_output, newEVIValues)
-ncvar_put(newEVINCDF4, "EVI", oldEVIValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
+ncvar_put(newEVINCDF4, "EVI", oldEVIValues, start=c(1, 1, 1), count=c(ncols.elevation.raster, nrows.elevation.raster, 1))
 nc_close(newEVINCDF4)
 
+gc()
 proc.time()
 
 ###### Saving TS ######
@@ -435,9 +481,10 @@ oldTSValues<-ncvar_get(nc,fic)
 newTSValues<-ncvar_def("TS","daily",list(dimLonDef,dimLatDef,tdim),longname="TS",missval=NaN,prec="double")
 nc_close(nc)
 newTSNCDF4<-nc_create(file_output,newTSValues)
-ncvar_put(newTSNCDF4,"TS",oldTSValues,start=c(1,1,1),count=c(raster.elevation@ncols,raster.elevation@nrows,1))
+ncvar_put(newTSNCDF4,"TS",oldTSValues,start=c(1,1,1),count=c(ncols.elevation.raster,nrows.elevation.raster,1))
 nc_close(newTSNCDF4)
 
+gc()
 proc.time()
 
 ###### Saving Rn ######
@@ -452,9 +499,10 @@ oldRnValues<-ncvar_get(nc,fic)
 newRnValues<-ncvar_def("Rn","daily",list(dimLonDef,dimLatDef,tdim),longname="Rn",missval=NaN,prec="double")
 nc_close(nc)
 newRnNCDF4<-nc_create(file_output,newRnValues)
-ncvar_put(newRnNCDF4,"Rn",oldRnValues,start=c(1,1,1),count=c(raster.elevation@ncols,raster.elevation@nrows,1))
+ncvar_put(newRnNCDF4,"Rn",oldRnValues,start=c(1,1,1),count=c(ncols.elevation.raster,nrows.elevation.raster,1))
 nc_close(newRnNCDF4)
 
+gc()
 proc.time()
 
 ###### Saving G ######
@@ -469,15 +517,10 @@ oldGValues<-ncvar_get(nc,fic)
 newGValues<-ncvar_def("G","daily",list(dimLonDef,dimLatDef,tdim),longname="G",missval=NaN,prec="double")
 nc_close(nc)
 newGNCDF4<-nc_create(file_output,newGValues)
-ncvar_put(newGNCDF4,"G",oldGValues,start=c(1,1,1),count=c(raster.elevation@ncols,raster.elevation@nrows,1))
+ncvar_put(newGNCDF4,"G",oldGValues,start=c(1,1,1),count=c(ncols.elevation.raster,nrows.elevation.raster,1))
 nc_close(newGNCDF4)
 
+gc()
 proc.time()
 
-###### Saving Elevation raster ######
-var_output <- paste(dados$Path.Output[1], "/elevation.tif", sep="")
-writeRaster(raster.elevation, var_output, format="GTiff")
-
-print("LABEL - WRITE DATA END")
-proc.time()
 
