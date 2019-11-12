@@ -181,7 +181,7 @@ print("WritingTiffsWithoutClouds")
 proc.time()
 
 s_srs_2 <- paste(crs(fic.st[[1]]))
-fic.st <- projectRaster(fic.st, crs=WGS84)
+fic.st <- projectRaster(fic.st[[1]], crs=WGS84) #fic.st[[1]]
 tr <- res(fic.st)
 
 rm(fic.st)
