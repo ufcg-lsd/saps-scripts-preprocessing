@@ -171,6 +171,7 @@ for(i in 1:length(wanted_bands.path)){
 	writeRaster(fic.st[[i]], aux, format='GTiff', NAflag=0, overwrite=TRUE)
 }
 
+rm(fic.st)
 gc()
 
 # Changing the projection of the images (UTM to GEO)
@@ -181,7 +182,7 @@ print("WritingTiffsWithoutClouds")
 proc.time()
 
 s_srs_2 <- paste(crs(fic.st[[1]]))
-fic.st <- projectRaster(fic.st[[1]], crs=WGS84) #fic.st[[1]]
+fic.st <- projectRaster(raster(fic.st[[1]]), crs=WGS84) #fic.st[[1]]
 tr <- res(fic.st)
 
 rm(fic.st)
