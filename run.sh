@@ -29,6 +29,13 @@ R_ALGORITHM_PREPROCESSING_VERSION=preprocessing.R
 INPUTDOWNLOAD_DIR_PATH=$ROOT_DIR/inputdownloading
 PREPROCESSING_DIR_PATH=$ROOT_DIR/preprocessing
 
+# files
+TIME_FILE=$PREPROCESSING_DIR_PATH/time
+
+echo "Step 0. Time (start)"
+touch $TIME_FILE
+echo "START `date +"%s"`" >> $TIME_FILE
+
 echo "Step 1. Capture MTL and station path"
 
 files=($INPUTDOWNLOAD_DIR_PATH/*_MTL.txt)
@@ -93,6 +100,9 @@ mv $R_EXEC_DIR/dados.csv $PREPROCESSING_DIR_PATH
 
 echo "Step 7. Generate metadata"
 bash $SANDBOX/generate_metadata.sh $IMAGE_DATASET $IMAGE_PATHROW $IMAGE_DATE $INPUTDOWNLOAD_DIR_PATH $PREPROCESSING_DIR_PATH
+
+echo "Step 8. Time (finish)"
+echo "START `date +"%s"`" >> $TIME_FILE
 
 ## Exit code
 # exit code `0` indicates a successful execution. Any other number indicates failure.
