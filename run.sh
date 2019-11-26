@@ -61,6 +61,7 @@ echo "Step 3. Starting CPU, disk and Memory collect..."
 
 bash $SCRIPTS_DIR/collect-cpu-usage.sh $(pidof R) | tee $PREPROCESSING_DIR_PATH/$IMAGE_NAME"_cpu_usage.txt" > /dev/null &
 bash $SCRIPTS_DIR/collect-memory-usage.sh $(pidof R) | tee $PREPROCESSING_DIR_PATH/$IMAGE_NAME"_mem_usage.txt" > /dev/null &
+bash $SCRIPTS_DIR/collect-memory-free.sh | tee $PREPROCESSING_DIR_PATH/$IMAGE_NAME"_mem_free.txt" > /dev/null &
 bash $SCRIPTS_DIR/collect-disk-usage.sh $(pidof R) | tee $PREPROCESSING_DIR_PATH/$IMAGE_NAME"_disk_usage.txt" > /dev/null &
 
 echo "Step 4. Executing R script"
@@ -93,6 +94,7 @@ echo "Step 5. Killing collect CPU, disk and Memory scripts"
 
 ps -ef | grep collect-cpu-usage.sh | grep -v grep | awk '{print $2}' | xargs kill
 ps -ef | grep collect-memory-usage.sh | grep -v grep | awk '{print $2}' | xargs kill
+ps -ef | grep collect-memory-free.sh | grep -v grep | awk '{print $2}' | xargs kill
 ps -ef | grep collect-disk-usage.sh | grep -v grep | awk '{print $2}' | xargs kill
 
 echo "Step 6. Moving dados.csv"
