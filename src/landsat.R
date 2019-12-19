@@ -19,7 +19,6 @@ landsat<-function(){
         (p.s$ESUN[i]*costheta)
     }
 
-    rm(rad)
     gc()
     
     #SAVI,LAI e EVI
@@ -51,7 +50,7 @@ landsat<-function(){
     if (n.sensor==7) k2<-1260.56 else k2<-1282.71 #Constante Temperatura de superf�cie
     if (n.sensor==5) TS_temp<-k2/log((Enb_temp*k1/rad[[6]])+1) else TS_temp<-k2/log((Enb_temp*k1/rad[[7]])+1)
     
-    rm(Enb_temp)
+    rm(rad, Enb_temp)
     gc()
 
     #Emissividade Eo
