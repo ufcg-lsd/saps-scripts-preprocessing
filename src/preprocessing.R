@@ -136,7 +136,7 @@ if (n.sensor != 8) mask_filter <- 672 else
   mask_filter <- 2720
 for (i in 1:nlayers(fic.st)) {
   f <- fic.st[[i]][]
-  f[fmask != mask_filter && fmask != 20480] <- NaN
+  f[fmask != mask_filter & fmask != 20480] <- NaN
   fic.st[[i]][] <- f 
 }
 
