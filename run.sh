@@ -1,0 +1,44 @@
+#!/bin/bash
+
+## This script pre-processes the data downloaded by the InputDownload phase
+
+## Checking args
+if [ $# -ne 4 ]
+then
+  echo "Usage: $0 /tmp/teste landsat_X PPPRRR YYYY-MM-DD"
+  exit 1
+fi
+
+## args
+ROOT_DIR=$1
+IMAGE_DATASET=$2
+IMAGE_PATHROW=$3
+IMAGE_DATE=$4
+
+# folders
+PREPROCESSING_DIR_PATH=$ROOT_DIR/preprocessing
+
+# fake files
+touch $PREPROCESSING_DIR_PATH/dados.csv
+touch $PREPROCESSING_DIR_PATH/elevation.tif
+touch $PREPROCESSING_DIR_PATH/error.log
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_alb.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_cpu_usage.txt
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_disk_usage.txt
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_EVI.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_G.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_LAI.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_mem_free.txt
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_mem_usage.txt
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_NDVI.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_Rn.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_SAVI.nc
+touch $PREPROCESSING_DIR_PATH/LC82150652015174LGN00_TS.nc
+touch $PREPROCESSING_DIR_PATH/out.log
+touch $PREPROCESSING_DIR_PATH/stage.metadata
+touch $PREPROCESSING_DIR_PATH/time
+
+exit 0
+
+## Exit code
+# exit code `0` indicates a successful execution. Any other number indicates failure. 
